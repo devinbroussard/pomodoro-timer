@@ -1,17 +1,32 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-const maxTimer = 1500
-const timer = ref(maxTimer)
+const maxPomodoroTimer = 1500
+const maxShortBreakTimer = 300
+const maxLongBreakTimer = 600
+
+let currentMaxTimer = maxPomodoroTimer
+
+const timer = ref(maxPomodoroTimer)
+const isTimerPaused = ref(false)
 
 let timerInterval = null
 
 function restartTimer() {
-  timer.value = maxTimer
+  timer.value = currentMaxTimer
   if (timerInterval) timerInterval()
 
   timerInterval = setInterval(() => {
-    if (timer.value === 0) timerInterval()
+    if (isTimerPaused.value) return
+
+    if (timer.value === 0) {
+      console.log('test')
+      clearInterval(timerInterval)
+      timerInterval = null
+      timer.value = currentMaxTimer
+
+      return
+    }
 
     timer.value--
   }, 1000)
@@ -24,13 +39,28 @@ const displayTime = computed(() => {
   return `${minutes || '00'}:${seconds || '00'}`
 })
 
-restartTimer()
+function changeTimer(maxTimer) {
+  currentMaxTimer = maxTimer
+  timer.value = currentMaxTimer
+
+  clearInterval(timerInterval)
+  timerInterval = null
+}
 </script>
 
 <template>
-  <div>{{ displayTime }}</div>
-
-  <button @click="restartTimer()">Restart time!</button>
+  <div>
+    <div>
+      <button @click="changeTimer(maxPomodoroTimer)" type="button">Pomodoro</button>
+      <button @click="changeTimer(maxShortBreakTimer)" type="button">Short Break</button>
+      <button @click="changeTimer(maxLongBreakTimer)" type="button">Long Break</button>
+    </div>
+    <div>{{ displayTime }}</div>
+    <button type="button" @click="restartTimer()">{{ timerInterval ? 'Reset' : 'Start' }}</button>
+    <button type="button" v-if="timerInterval" @click="isTimerPaused = !isTimerPaused">
+      {{ isTimerPaused ? 'Start' : 'Pause' }}
+    </button>
+  </div>
 </template>
 
 <style scoped></style>
